@@ -1,26 +1,3 @@
-# Copyright (c) 2025, RoboVerse community
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -67,10 +44,6 @@ def generate_launch_description():
     urdf_file_name = LaunchConfiguration('urdf_file_name', default='go2.urdf')
     send_buffer_limit = LaunchConfiguration('send_buffer_limit', default='100000000')
     on_exit = LaunchConfiguration('on_exit', default='shutdown')
-    elevenlabs_api_key = LaunchConfiguration(
-        'elevenlabs_api_key', default=EnvironmentVariable(
-            'ELEVENLABS_API_KEY', default_value=''))
-    voice_name = LaunchConfiguration('voice_name', default='default')
 
     return LaunchDescription([
         # Declare launch arguments
@@ -95,30 +68,14 @@ def generate_launch_description():
             description='Behavior when a node exits (shutdown will terminate all nodes)'
         ),
         DeclareLaunchArgument(
-            'elevenlabs_api_key',
-            default_value=EnvironmentVariable('ELEVENLABS_API_KEY', default_value=''),
-            description='API key for ElevenLabs TTS service'
-        ),
-        DeclareLaunchArgument(
-            'voice_name',
-            default_value='default',
-            description='Voice name for TTS'
-        ),
-        DeclareLaunchArgument(
             'obstacle_avoidance',
             default_value='false',
             description='Enable obstacle avoidance',
         ),
-        DeclareLaunchArgument(
-            'enable_foxglove_bridge',
-            default_value='true',
-            description='Enable Foxglove Bridge'
-        ),
-
-
 
         # Group all nodes to ensure they share the same on_exit behavior
         GroupAction([
+
             # Go2 driver node with minimal parameters
             Node(
                 package='go2_robot_sdk',
@@ -161,30 +118,6 @@ def generate_launch_description():
                 ],
                 on_exit=on_exit,
             ),
-
-            # Foxglove Bridge node
-            Node(
-                package='foxglove_bridge',
-                executable='foxglove_bridge',
-                parameters=[{
-                    'send_buffer_limit': send_buffer_limit
-                }],
-                on_exit=on_exit,
-                condition=IfCondition(LaunchConfiguration('enable_foxglove_bridge')),
-            ),
-
-            # TTS node
-            Node(
-                package='go2_robot_sdk',
-                executable='tts_node',
-                name='tts_node',
-                parameters=[{
-                    'elevenlabs_api_key': elevenlabs_api_key,
-                    'voice_name': voice_name
-                }],
-                on_exit=on_exit,
-            ),
         ]),
-
         OpaqueFunction(function=load_urdf),
     ])
